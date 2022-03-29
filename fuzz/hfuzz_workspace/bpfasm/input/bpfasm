@@ -1,0 +1,68 @@
+ld [x + 4]
+ld M[4]
+ld #4
+ld len
+ld proto
+ldi #4
+ldh [4]
+ldh [x + 4]
+ldh proto
+ldb [4]
+ldb [x + 4]
+ldb proto
+ldx M[4]
+ldx 4 * ([4] & 0xF)
+ldx #4
+ldx len
+ldxi #4
+ldxb 4 * ([4] & 0xF)
+st M[4]
+stx M[4]
+jmp jump_target_1
+ja jump_target_2
+jeq x, jump_target_3, jump_target_1
+jeq x, jump_target_2
+jeq #4, jump_target_3, jump_target_1
+jeq #4, jump_target_2
+jneq x, jump_target_3
+jne x, jump_target_1
+jneq #4, jump_target_2
+jne #4, jump_target_3
+jlt x, jump_target_1
+jlt #4, jump_target_2
+jle x, jump_target_3
+jle #4, jump_target_1
+jgt x, jump_target_2
+jgt #4, jump_target_3
+jge x, jump_target_1
+jge x, jump_target_2
+jset x, jump_target_3, jump_target_1
+jset x, jump_target_2
+jset #4, jump_target_3, jump_target_1
+jset #4, jump_target_2
+add x
+add #4
+sub x
+sub #4
+mul x
+mul #4
+div x
+div #4
+mod x
+mod #4
+neg
+and x
+and #4
+or x
+or #4
+xor x
+xor #4
+lsh x
+lsh #4
+rsh x
+rsh #4
+tax
+txa
+jump_target_1: ret a
+jump_target_2: ret x
+jump_target_3: ret #4

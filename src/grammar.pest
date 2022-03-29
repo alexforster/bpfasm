@@ -1,0 +1,86 @@
+// Copyright © Alex Forster <alex@alexforster.com>
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
+WHITESPACE = _{ WHITE_SPACE }
+COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | (";" ~ (!NEWLINE ~ ANY)*) }
+
+Hexadecimal = @{ "0x" ~ ASCII_HEX_DIGIT+ }
+Binary = @{ "0b" ~ '0'..'1'+ }
+Octal = @{ "0" ~ ASCII_OCT_DIGIT+ }
+Decimal = @{ "0" | ("-" | "+")? ~ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
+Integer = _{ (Hexadecimal | Binary | Octal | Decimal) }
+
+Identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+
+IndexRegister = !{ ("x" | "%x") } // x/%x
+PacketOffset = !{ "[" ~ Integer ~ "]" } // [k]
+IndirectPacketOffset = !{ "[" ~ ("x" | "%x") ~ "+" ~ Integer ~ "]" } // [x/%x + k]
+MemoryAddress = !{ "M" ~ "[" ~ Integer ~ "]" } // M[k]
+Immediate = !{ "#"? ~ Integer } // #k
+PacketOffsetMSH = !{ "4" ~ "*" ~ "(" ~ "[" ~ Integer ~ "]" ~ "&" ~ ("0xf" | "0xF") ~ ")" } // 4*([k]&0xf)
+Jump = !{ Identifier } // L
+JumpImmediate = !{ "#" ~ Integer ~ "," ~ Identifier ~ "," ~ Identifier } // #k,Lt,Lf
+JumpIndexRegister = !{ ("x" | "%x") ~ "," ~ Identifier ~ "," ~ Identifier } // x/%x,Lt,Lf
+JumpIfImmediate = !{ "#" ~ Integer ~ "," ~ Identifier } // #k,Lt
+JumpIfIndexRegister = !{ ("x" | "%x") ~ "," ~ Identifier } // x/%x,Lt
+AccumulatorRegister = !{ ("a" | "%a") } // a/%a
+Length = !{ "#"? ~ ("len" | "pktlen")} // len/#len
+Extension = !{ "#"? ~ Identifier } // extension/#extension
+
+LD = @{ "ld" ~ WHITE_SPACE+ ~ (PacketOffset | IndirectPacketOffset | MemoryAddress | Immediate | Length | Extension) } // Load word into A
+LDI = @{ "ldi" ~ WHITE_SPACE+ ~ (Immediate) } // Load word into A
+LDH = @{ "ldh" ~ WHITE_SPACE+ ~ (PacketOffset | IndirectPacketOffset | Extension) } // Load half-word into A
+LDB = @{ "ldb" ~ WHITE_SPACE+ ~ (PacketOffset | IndirectPacketOffset | Extension) } // Load byte into A
+LDX = @{ "ldx" ~ WHITE_SPACE+ ~ (MemoryAddress | PacketOffsetMSH | Immediate | Length) } // Load word into X
+LDXI = @{ "ldxi" ~ WHITE_SPACE+ ~ (Immediate) } // Load word into X
+LDXB = @{ "ldxb" ~ WHITE_SPACE+ ~ (PacketOffsetMSH) } // Load byte into X
+
+ST = @{ "st" ~ WHITE_SPACE+ ~ (MemoryAddress) } // Store A into M[]
+STX = @{ "stx" ~ WHITE_SPACE+ ~ (MemoryAddress) } // Store X into M[]
+
+JMP = @{ ("jmp" | "ja") ~ WHITE_SPACE+ ~ (Jump) } // Jump
+JEQ = @{ "jeq" ~ WHITE_SPACE+ ~ (JumpIndexRegister | JumpIfIndexRegister | JumpImmediate | JumpIfImmediate) } // Jump on A == <x>
+JNEQ = @{ ("jneq" | "jne") ~ WHITE_SPACE+ ~ (JumpIfIndexRegister | JumpIfImmediate) } // Jump on A != <x>
+JLT = @{ "jlt" ~ WHITE_SPACE+ ~ (JumpIfIndexRegister | JumpIfImmediate) } // Jump on A < <x>
+JLE = @{ "jle" ~ WHITE_SPACE+ ~ (JumpIfIndexRegister | JumpIfImmediate) } // Jump on A <= <x>
+JGT = @{ "jgt" ~ WHITE_SPACE+ ~ (JumpIndexRegister | JumpIfIndexRegister | JumpImmediate | JumpIfImmediate) } // Jump on A > <x>
+JGE = @{ "jge" ~ WHITE_SPACE+ ~ (JumpIndexRegister | JumpIfIndexRegister | JumpImmediate | JumpIfImmediate) } // Jump on A >= <x>
+JSET = @{ "jset" ~ WHITE_SPACE+ ~ (JumpIndexRegister | JumpIfIndexRegister | JumpImmediate | JumpIfImmediate) } // Jump on A & <x>
+
+ADD = @{ "add" ~ WHITE_SPACE+ ~ (IndexRegister | Immediate) } // A + <x>
+SUB = @{ "sub" ~ WHITE_SPACE+ ~ (IndexRegister | Immediate) } // A - <x>
+MUL = @{ "mul" ~ WHITE_SPACE+ ~ (IndexRegister | Immediate) } // A * <x>
+DIV = @{ "div" ~ WHITE_SPACE+ ~ (IndexRegister | Immediate) } // A / <x>
+MOD = @{ "mod" ~ WHITE_SPACE+ ~ (IndexRegister | Immediate) } // A % <x>
+NEG = @{ "neg" } // !A
+AND = @{ "and" ~ WHITE_SPACE+ ~ (IndexRegister | Immediate) } // A & <x>
+OR = @{ "or" ~ WHITE_SPACE+ ~ (IndexRegister | Immediate) } // A | <x>
+XOR = @{ "xor" ~ WHITE_SPACE+ ~ (IndexRegister | Immediate) } // A ^ <x>
+LSH = @{ "lsh" ~ WHITE_SPACE+ ~ (IndexRegister | Immediate) } // A << <x>
+RSH = @{ "rsh" ~ WHITE_SPACE+ ~ (IndexRegister | Immediate) } // A >> <x>
+
+TAX = @{ "tax" } // Copy A into X
+TXA = @{ "txa" } // Copy X into A
+COP = @{ "cop" ~ WHITE_SPACE+ ~ (Immediate | Extension) } // Call coprocessor func[k]()
+COPX = @{ "copx" } // Call coprocesor func[X]()
+
+RET = @{ "ret" ~ WHITE_SPACE+ ~ (Immediate | IndexRegister | AccumulatorRegister) } // Return
+
+Label = { Identifier ~ ":" }
+
+Instruction = _{
+    // load instructions
+    LD | LDI | LDH | LDB | LDX | LDXI | LDXB |
+    // store instructions
+    ST | STX |
+    // branch instructions
+    JMP | JEQ | JNEQ | JLT | JLE | JGT | JGE | JSET |
+    // ALU instructions
+    ADD | SUB | MUL | DIV | MOD | NEG | AND | OR | XOR | LSH | RSH |
+    // miscellaneous instructions
+    TAX | TXA | COP | COPX |
+    // return instructions
+    RET
+}
+
+Program = _{ SOI ~ (Label | Instruction | NEWLINE)* ~ EOI }
