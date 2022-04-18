@@ -3,7 +3,7 @@
 
 [package]
 name = "bpfasm"
-version = "1.0.0-beta1"
+version = "1.0.0"
 description = "Berkley Packet Filter (BPF) assembler"
 readme = "README.md"
 authors = ["Alex Forster <alex@alexforster.com>"]
